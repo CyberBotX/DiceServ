@@ -1,3 +1,5 @@
+Primary repository on [GitHub](https://github.com/CyberBotX/DiceServ).
+
 # DiceServ for Anope 2.0
 
 This is DiceServ, a dice rolling service for version 2.0 of the [Anope IRC Services](http://www.anope.org/). It's primary purpose is for tabletop role-playing games being played over IRC. It consists of the following commands:
@@ -46,7 +48,7 @@ If you have any questions, comments or concerns about DiceServ:
 
 * Contact me by email: cyberbotx@cyberbotx.com (please include DiceServ in the subject line)
 * Contact me on IRC: join the channel #diceserv on the server jenna.cyberbotx.com
-* Submit an issue via GitHub's issue tracker
+* Submit an issue via [GitHub](https://github.com/CyberBotX/DiceServ/issues)'s issue tracker
 
 ## License
 
@@ -75,4 +77,3 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
-
