@@ -48,7 +48,7 @@ If you have any questions, comments or concerns about DiceServ:
 
 * Contact me by email: cyberbotx@cyberbotx.com (please include DiceServ in the subject line)
 * Contact me on IRC: join the channel #diceserv on the server jenna.cyberbotx.com
-* Submit an issue via [GitHub](https://github.com/CyberBotX/DiceServ/issues)'s issue tracker
+* Submit an issue via [GitHub's issue tracker](https://github.com/CyberBotX/DiceServ/issues)
 
 ## License
 

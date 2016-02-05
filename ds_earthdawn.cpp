@@ -181,7 +181,7 @@ public:
 				{
 					if (bonusResult)
 						delete bonusResult;
-					bonusResult = DiceServDataHandler->Clone(DiceServDataHandler->Dice(data, 1, DiceServDataHandler->Sides(*result)));
+					bonusResult = DiceServDataHandler->Dice(data, 1, DiceServDataHandler->Sides(*result));
 					bonuses.push_back(DiceServDataHandler->Sum(*bonusResult));
 				} while (DiceServDataHandler->Sum(*bonusResult) == DiceServDataHandler->Sides(*result));
 				delete bonusResult;

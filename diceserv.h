@@ -1,7 +1,21 @@
 #pragma once
 
+#include <iomanip>
+#include <limits>
 #include <numeric>
 #include "module.h"
+
+/** Specialization of Anope's stringify that handles doubles only.
+ */
+template<> inline Anope::string stringify<double>(const double &x)
+{
+	std::ostringstream stream;
+
+	if (!(stream << std::setprecision(std::numeric_limits<double>::digits10) << x))
+		throw ConvertException("Stringify fail");
+
+	return stream.str();
+}
 
 /** Enumeration of dice error codes */
 enum DiceErrorCode
@@ -170,7 +184,7 @@ public:
 
 	virtual void ErrorHandler(CommandSource &source, const DiceServData &data) = 0;
 	virtual void Roller(DiceServData &data) = 0;
-	virtual DiceResult Dice(int num, unsigned sides) = 0;
+	virtual DiceResult *Dice(int num, unsigned sides) = 0;
 	virtual void Ignore(Extensible *obj) = 0;
 	virtual void Unignore(Extensible *obj) = 0;
 	virtual bool IsIgnored(Extensible *obj) = 0;
@@ -212,7 +226,7 @@ public:
 	void AddToOpResults(const FunctionResult &result);
 	void SetOpResultsAsTimesResults();
 	void Roll();
-	DiceResult Dice(int num, unsigned sides);
+	DiceResult *Dice(int num, unsigned sides);
 	void HandleError(CommandSource &source);
 	void SendReply(CommandSource &source, const Anope::string &output) const;
 };
@@ -238,7 +252,7 @@ public:
 	virtual void AddToOpResults(DiceServData &data, const FunctionResult &result) = 0;
 	virtual void SetOpResultsAsTimesResults(DiceServData &data) = 0;
 	virtual void Roll(DiceServData &data) = 0;
-	virtual DiceResult Dice(DiceServData &data, int num, unsigned sides) = 0;
+	virtual DiceResult *Dice(DiceServData &data, int num, unsigned sides) = 0;
 	virtual void HandleError(DiceServData &data, CommandSource &source) = 0;
 	virtual void SendReply(const DiceServData &data, CommandSource &source, const Anope::string &output) const = 0;
 

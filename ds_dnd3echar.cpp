@@ -97,7 +97,7 @@ public:
 		data.isExtended = true;
 		data.rollPrefix = "D&D 3e Character roll";
 
-		if (!DiceServDataHandler->PreParse(data, source, params, 1))
+		if (!DiceServDataHandler->PreParse(data, source, newParams, 1))
 			return;
 		if (!DiceServDataHandler->CheckMessageLengthPreProcess(data, source))
 			return;

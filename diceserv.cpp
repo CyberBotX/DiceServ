@@ -1,8 +1,8 @@
 /* ----------------------------------------------------------------------------
  * Name    : diceserv.cpp
  * Author  : Naram Qashat (CyberBotX)
- * Version : 3.0.0
- * Date    : (Last modified) February 3, 2016
+ * Version : 3.0.1
+ * Date    : (Last modified) February 4, 2016
  * ----------------------------------------------------------------------------
  * The following applies to the non-Anope-derived portions of the code
  * (excluding the RNG):
@@ -49,6 +49,14 @@ SOFTWARE.
  * ----------------------------------------------------------------------------
  * Changelog:
  *
+ * 3.0.1 - Fixed issues with loading an old DiceServ database so it actually
+ *           works (there was a typo in the configuration file plus a timer
+ *           has to be used).
+ *       - Made a specialization of stringify for double to correct issues
+ *           with some numbers using scientific notation when they shouldn't
+ *           have as well as bring the precision back up.
+ *       - Fixed EARTHDAWN on *nix-based systems.
+ *       - Fixed DND3ECHAR so it actually works.
  * 3.0.0 - Massive rewrite, now only targets Anope 2.0.x and has been heavily
  *           modularized.
  *       - Added support for functions to have an arbitrary number of
@@ -114,7 +122,6 @@ SOFTWARE.
 /* RequiredLibraries: m */
 
 #include <algorithm>
-#include <limits>
 #include <cctype>
 #include <cmath>
 #include <cstdlib>
@@ -2341,7 +2348,7 @@ void DiceServData::Roll()
 	this->DiceServ->Roller(*this);
 }
 
-DiceResult DiceServData::Dice(int num, unsigned sides)
+DiceResult *DiceServData::Dice(int num, unsigned sides)
 {
 	return this->DiceServ->Dice(num, sides);
 }
@@ -2430,7 +2437,7 @@ public:
 		data.Roll();
 	}
 
-	DiceResult Dice(DiceServData &data, int num, unsigned sides)
+	DiceResult *Dice(DiceServData &data, int num, unsigned sides)
 	{
 		return data.Dice(num, sides);
 	}
@@ -2471,6 +2478,20 @@ public:
 	}
 };
 
+/** A timer designed to load an old DiceServ database from Anope 1.8.x or pre-Anope 1.9.2 after the main database has loaded.
+ */
+class DiceServUpgradeTimer : public Timer
+{
+	Anope::string diceservdb;
+
+public:
+	DiceServUpgradeTimer(Module *creator, long timeout, bool dorepeat, const Anope::string &db) : Timer(creator, timeout, Anope::CurTime, dorepeat), diceservdb(db)
+	{
+	}
+
+	void Tick(time_t) anope_override;
+};
+
 /** DiceServ's core module, provides the interface for other modules to be able to use the roller.
  */
 class DiceServCore : public Module, public DiceServService
@@ -2494,7 +2515,6 @@ public:
 		this->SetAuthor(DiceServService::Author());
 		this->SetVersion(DiceServService::Version());
 
-		// Handles loading an old DiceServ database from Anope 1.8.x or pre-Anope 1.9.2
 		const Anope::string &diceservdb = Config->GetModule(this)->Get<const Anope::string>("diceservdb", "");
 		if (!diceservdb.empty())
 		{
@@ -2502,32 +2522,12 @@ public:
 
 			if (oldDatabase)
 			{
-				while (!oldDatabase.eof())
-				{
-					Anope::string ignore_type, ignore_name;
-					oldDatabase >> ignore_type >> ignore_name;
-					if (!ignore_type.empty() && !ignore_name.empty())
-					{
-						if (ignore_type.equals_ci("C"))
-						{
-							ChannelInfo *ci = ChannelInfo::Find(ignore_name);
-							if (ci)
-								this->Ignore(ci);
-						}
-						else if (ignore_type.equals_ci("N"))
-						{
-							NickAlias *na = NickAlias::Find(ignore_name);
-							if (na)
-								this->Ignore(na->nc);
-						}
-					}
-				}
-
 				oldDatabase.close();
 
-				unlink(diceservdb.c_str());
-
-				Log(this) << "Loaded old database, it has been deleted and ignore data will now be stored as metadata in main database. Please comment out the diceservdb directive in the diceserv module configuration block.";
+				if (Me->IsSynced())
+					new DiceServUpgradeTimer(this, 0, false, diceservdb);
+				else
+					new DiceServUpgradeTimer(this, 1, true, diceservdb);
 			}
 		}
 	}
@@ -2838,9 +2838,9 @@ public:
 
 	/** A middleman function to roll dice, used currently by the Earthdawn command for generating bonus rolls.
 	 */
-	DiceResult Dice(int num, unsigned sides)
+	DiceResult *Dice(int num, unsigned sides)
 	{
-		return ::Dice(num, sides);
+		return ::Dice(num, sides).Clone();
 	}
 
 	/** Add an ignore to the given object (usually a channel or nick).
@@ -2868,5 +2868,53 @@ public:
 		return this->DiceServIgnore.HasExt(obj);
 	}
 };
+
+void DiceServUpgradeTimer::Tick(time_t) anope_override
+{
+	if (Me->IsSynced())
+	{
+		DiceServCore *DiceServ = anope_dynamic_static_cast<DiceServCore *>(this->GetOwner());
+
+		std::ifstream oldDatabase(this->diceservdb.c_str(), std::ios::in | std::ios::binary);
+
+		do
+		{
+			std::string line;
+			getline(oldDatabase, line);
+
+			if (oldDatabase.eof())
+				break;
+
+			spacesepstream sep(line);
+			Anope::string ignore_type, ignore_name;
+			sep.GetToken(ignore_type);
+			sep.GetToken(ignore_name);
+			if (!ignore_type.empty() && !ignore_name.empty())
+			{
+				if (ignore_type.equals_ci("C"))
+				{
+					ChannelInfo *ci = ChannelInfo::Find(ignore_name);
+					if (ci)
+						DiceServ->Ignore(ci);
+				}
+				else if (ignore_type.equals_ci("N"))
+				{
+					NickAlias *na = NickAlias::Find(ignore_name);
+					if (na)
+						DiceServ->Ignore(na->nc);
+				}
+			}
+		} while (true);
+
+		oldDatabase.close();
+
+		unlink(this->diceservdb.c_str());
+
+		Log(DiceServ) << "Loaded old database, it has been deleted and ignore data will now be stored as metadata in main database. Please comment out the diceservdb directive in the diceserv module configuration block.";
+
+		if (this->GetRepeat())
+			delete this;
+	}
+}
 
 MODULE_INIT(DiceServCore)
