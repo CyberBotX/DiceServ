@@ -1,15 +1,11 @@
 /* ----------------------------------------------------------------------------
  * Name    : ds_list.cpp
  * Author  : Naram Qashat (CyberBotX)
- * Version : 3.0.1
- * Date    : (Last modified) February 4, 2016
- * ----------------------------------------------------------------------------
- * Requires: Anope 2.0.x
  * ----------------------------------------------------------------------------
  * Description:
  *
  * The LIST command of DiceServ. See diceserv.cpp for more information about
- * DiceServ, including license.
+ * DiceServ, including version and license.
  * ----------------------------------------------------------------------------
  */
 

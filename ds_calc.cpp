@@ -1,15 +1,11 @@
 /* ----------------------------------------------------------------------------
  * Name    : ds_calc.cpp
  * Author  : Naram Qashat (CyberBotX)
- * Version : 3.0.0
- * Date    : (Last modified) February 3, 2016
- * ----------------------------------------------------------------------------
- * Requires: Anope 2.0.x
  * ----------------------------------------------------------------------------
  * Description:
  *
  * The CALC and EXCALC commands of DiceServ. See diceserv.cpp for more
- * information about DiceServ, including license.
+ * information about DiceServ, including version and license.
  * ----------------------------------------------------------------------------
  */
 
