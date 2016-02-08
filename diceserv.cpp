@@ -2555,7 +2555,7 @@ public:
 
 	/** Handles accessing HELP FUNCTIONS
 	 */
-	EventReturn OnPreCommand(CommandSource &source, Command *command, std::vector<Anope::string> &params)
+	EventReturn OnPreCommand(CommandSource &source, Command *command, std::vector<Anope::string> &params) anope_override
 	{
 		if (command->name.equals_ci("generic/help"))
 		{
@@ -2609,33 +2609,20 @@ public:
 		return EVENT_CONTINUE;
 	}
 
-	/** Handles adding a line for DiceServ status to NS INFO and CS INFO
+	/** Handles adding a line for DiceServ status to NickServ's INFO command.
 	 */
-	void OnPostCommand(CommandSource &source, Command *command, const std::vector<Anope::string> &params)
+	void OnNickInfo(CommandSource &source, NickAlias *na, InfoFormatter &info, bool show_hidden) anope_override
 	{
-		if (command->name.equals_ci("nickserv/info"))
-		{
-			Anope::string nick = params.size() ? params[0] : "";
+		if (source.HasCommand("diceserv/info"))
+			info[Anope::printf(_("%s Status"), this->DiceServ->nick.c_str())] = this->IsIgnored(na->nc) ? _("Ignored") : _("Allowed");
+	}
 
-			if (!nick.empty() && source.HasCommand("diceserv/info"))
-			{
-				NickAlias *na = NickAlias::Find(nick);
-				if (na)
-					source.Reply(_("%s Status: %s"), this->DiceServ->nick.c_str(), this->IsIgnored(na->nc) ? _("Ignored") : _("Allowed"));
-			}
-		}
-		else if (command->name.equals_ci("chanserv/info"))
-		{
-			Anope::string chan = params.size() ? params[0] : "";
-
-			if (!chan.empty())
-			{
-				ChannelInfo *ci = ChannelInfo::Find(chan);
-				if (ci && ((ci->HasExt("SECUREFOUNDER") ? source.IsFounder(ci) : source.AccessFor(ci).HasPriv("FOUNDER")) ||
-					source.HasCommand("diceserv/info")))
-					source.Reply(_("%s Status: %s"), this->DiceServ->nick.c_str(), this->IsIgnored(ci) ? _("Ignored") : _("Allowed"));
-			}
-		}
+	/** Handles adding a line for DiceServ status to ChanServ's INFO command.
+	 */
+	void OnChanInfo(CommandSource &source, ChannelInfo *ci, InfoFormatter &info, bool show_all) anope_override
+	{
+		if ((ci->HasExt("SECUREFOUNDER") ? source.IsFounder(ci) : source.AccessFor(ci).HasPriv("FOUNDER")) || source.HasCommand("diceserv/info"))
+			info[Anope::printf(_("%s Status"), this->DiceServ->nick.c_str())] = this->IsIgnored(ci) ? _("Ignored") : _("Allowed");
 	}
 
 	/** Displays the help header for the core of DiceServ.
