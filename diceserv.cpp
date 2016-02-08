@@ -205,7 +205,7 @@ static inline double cbrt(double num)
 
 /** A combination RNG, consisting of a SIMD-oriented Fast Mersenne Twister (SFMT) RNG and Mother-of-all RNG.
  *
- * SMFT is an improvement of the Mersenne Twister with better randomness and higher speed.
+ * SFMT is an improvement of the Mersenne Twister with better randomness and higher speed.
  * Mother-of-all is an older multiply-with-carry generator.
  * This is a combination of the two, with improved randomness.
  *
@@ -262,12 +262,11 @@ class SFMT_Mother
 	uint32_t LastInterval; // Last interval length for IRandomX
 	uint32_t RLimit; // Rejection limit used by IRandomX
 	__m128i mask; // AND mask
-	//__m128i state[SFMT_N]; // State vector for SFMT generator
 	union
 	{
 		__m128i state128[SFMT_N];
 		uint32_t state32[4 * SFMT_N];
-	};
+	}; // State vector for SFMT generator
 	uint32_t MotherState[5]; // State vector for Mother-Of-All generator
 
 	// Subfunction for the sfmt algorithm
@@ -354,7 +353,7 @@ class SFMT_Mother
 	}
 
 public:
-	SFMT_Mother(int seed) : LastInterval(0)
+	SFMT_Mother(int seed) : LastInterval(0), RLimit(0)
 	{
 		this->RandomInit(seed);
 	}
@@ -482,7 +481,7 @@ static inline bool is_plusmin(char chr)
 	return chr == '+' || chr == '-';
 }
 
-/** Determine if the given character is an operator of any sort, except for parenthesis.
+/** Determine if the given character is an operator of any sort, except for parentheses.
  * @param chr Character to check
  * @return true if the character is a non-parenthesis operator, false otherwise
  */
@@ -998,7 +997,7 @@ static Infix TokenizeInfix(const Infix &infix)
 	return Infix(newinfix, positions);
 }
 
-/** Enumeration for PostfixValue to determine it's type */
+/** Enumeration for PostfixValue to determine its type */
 enum PostfixValueType
 {
 	POSTFIX_VALUE_NONE,
@@ -1009,57 +1008,79 @@ enum PostfixValueType
 /** Base class for values in a postfix equation */
 class PostfixValueBase
 {
+	/** The type for the value */
 	PostfixValueType type;
-protected:
-	virtual void Clear() = 0;
-public:
-	PostfixValueBase() : type(POSTFIX_VALUE_NONE)
-	{
-	}
 
+protected:
+	/** When overriden, will be used to delete memory allocated.
+	 */
+	virtual void Clear() = 0;
+
+public:
+	/** Constructor that take the type for the value.
+	 */
 	PostfixValueBase(PostfixValueType t) : type(t)
 	{
 	}
 
+	/** Destructor, virtual so that derived classes can call the Clear function.
+	 */
 	virtual ~PostfixValueBase()
 	{
 	}
 
+	/** Gets the type of the value.
+	 * @return The value's type
+	 */
 	PostfixValueType Type() const
 	{
 		return this->type;
 	}
 
+	/** Creates a clone of the value.
+	 * @return A clone of the value
+	 */
 	virtual PostfixValueBase *Clone() const = 0;
 };
 
-/** Version of PostfixValue for double */
+/** Version of PostfixValue for double (this is used for numbers) */
 class PostfixValueDouble : public PostfixValueBase
 {
+	/** The value */
 	double *val;
+
 protected:
+	/** Deletes the value to prevent memory leaks.
+	 */
 	void Clear()
 	{
 		delete this->val;
 	}
-public:
-	PostfixValueDouble() : PostfixValueBase(POSTFIX_VALUE_DOUBLE), val(NULL)
-	{
-	}
 
+public:
+	/** Constructor that takes the value to store.
+	 */
 	PostfixValueDouble(double Val) : PostfixValueBase(POSTFIX_VALUE_DOUBLE), val(new double(Val))
 	{
 	}
 
+	/** Copy constructor, duplicates the value.
+	 */
 	PostfixValueDouble(const PostfixValueDouble &Val) : PostfixValueBase(POSTFIX_VALUE_DOUBLE), val(Val.val ? new double(*Val.val) : NULL)
 	{
 	}
 
+	/** Destructor, deletes value.
+	 */
 	~PostfixValueDouble()
 	{
 		this->Clear();
 	}
 
+	/** Assignment operator, will make sure to only allocate memory when needed.
+	 * @param Val The value to copy into the current instance
+	 * @return A reference of the current instance, for operator chaining purposes
+	 */
 	PostfixValueDouble &operator=(const PostfixValueDouble &Val)
 	{
 		if (this != &Val && Val.val)
@@ -1072,43 +1093,61 @@ public:
 		return *this;
 	}
 
+	/** Gets the value.
+	 * @return The value
+	 */
 	const double *Get() const
 	{
 		return this->val;
 	}
 
+	/** Creates a clone of the value.
+	 * @return A clone of the value
+	 */
 	PostfixValueDouble *Clone() const
 	{
 		return new PostfixValueDouble(*this);
 	}
 };
 
-/** Version of PostfixValue for Anope::string */
+/** Version of PostfixValue for Anope::string (this is used for anything that isn't a number) */
 class PostfixValueString : public PostfixValueBase
 {
+	/** The value */
 	Anope::string *val;
+
 protected:
+	/** Deletes the value to prevent memory leaks.
+	 */
 	void Clear()
 	{
 		delete this->val;
 	}
-public:
-	PostfixValueString() : PostfixValueBase(POSTFIX_VALUE_STRING), val(NULL)
-	{
-	}
 
+public:
+	/** Constructor that takes the value to store.
+	 */
 	PostfixValueString(const Anope::string &Val) : PostfixValueBase(POSTFIX_VALUE_STRING), val(new Anope::string(Val))
 	{
 	}
+
+	/** Copy constructor, duplicates the value.
+	 */
 	PostfixValueString(const PostfixValueString &Val) : PostfixValueBase(POSTFIX_VALUE_STRING), val(Val.val ? new Anope::string(*Val.val) : NULL)
 	{
 	}
 
+	/** Destructor, deletes value.
+	 */
 	~PostfixValueString()
 	{
 		this->Clear();
 	}
 
+	/** Assignment operator, will make sure to only allocate memory when needed.
+	 * @param Val The value to copy into the current instance
+	 * @return A reference of the current instance, for operator chaining purposes
+	 */
 	PostfixValueString &operator=(const PostfixValueString &Val)
 	{
 		if (this != &Val && Val.val)
@@ -1121,11 +1160,17 @@ public:
 		return *this;
 	}
 
+	/** Gets the value.
+	 * @return The value
+	 */
 	const Anope::string *Get() const
 	{
 		return this->val;
 	}
 
+	/** Creates a clone of the value.
+	 * @return A clone of the value
+	 */
 	PostfixValueString *Clone() const
 	{
 		return new PostfixValueString(*this);
@@ -1135,17 +1180,34 @@ public:
 /** Container for the list of Postfix values */
 class Postfix
 {
+	/** A vector storing the list of Postfix values */
 	std::vector<PostfixValueBase *> values;
+
 public:
+	/** Default constructor, creates an empty list.
+	 */
 	Postfix() : values()
 	{
 	}
 
+	/** Copy constructor, will copy all values from another instance to this one.
+	 */
 	Postfix(const Postfix &postfix) : values()
 	{
 		this->append(postfix);
 	}
 
+	/** Destructor, will clear the list.
+	 */
+	~Postfix()
+	{
+		this->clear();
+	}
+
+	/** Assigment operator, will copy all values from one instance to this one, making sure to avoid memory leaks.
+	 * @param postfix The instance to copy values from
+	 * @return A reference of the current instance, for operator chaining purposes
+	 */
 	Postfix &operator=(const Postfix &postfix)
 	{
 		if (this != &postfix)
@@ -1156,11 +1218,8 @@ public:
 		return *this;
 	}
 
-	~Postfix()
-	{
-		this->clear();
-	}
-
+	/** Clears the list, deleting the allocated memory to prevent memory leaks.
+	 */
 	void clear()
 	{
 		for (unsigned y = 0, len = this->values.size(); y < len; ++y)
@@ -1168,32 +1227,51 @@ public:
 		this->values.clear();
 	}
 
+	/** Adds a new double value to the list.
+	 * @param dbl The double value to add
+	 */
 	void add(double dbl)
 	{
 		this->values.push_back(new PostfixValueDouble(dbl));
 	}
 
+	/** Adds a new string value to the list.
+	 * @param str The string value to add
+	 */
 	void add(const Anope::string &str)
 	{
 		this->values.push_back(new PostfixValueString(str));
 	}
 
+	/** Appends another instance to this one.
+	 * @param postfix The instance to append from
+	 */
 	void append(const Postfix &postfix)
 	{
 		for (unsigned y = 0, len = postfix.values.size(); y < len; ++y)
 			this->values.push_back(postfix.values[y]->Clone());
 	}
 
+	/** Determine if the list is empty or not.
+	 * @return true if the list is empty, false otherwise
+	 */
 	bool empty() const
 	{
 		return this->values.empty();
 	}
 
+	/** Gets the size of the list.
+	 * @return The size of the list.
+	 */
 	size_t size() const
 	{
 		return this->values.size();
 	}
 
+	/** Subscript operator, will get the value at the given index.
+	 * @param index The index to look at
+	 * @return The value for the given index
+	 */
 	PostfixValueBase *operator[](unsigned index)
 	{
 		if (index >= this->values.size())
@@ -1201,6 +1279,7 @@ public:
 		return this->values[index];
 	}
 
+	/** Same as above, but for const safety. */
 	const PostfixValueBase *operator[](unsigned index) const
 	{
 		if (index >= this->values.size())
@@ -1503,6 +1582,7 @@ static double EvaluatePostfix(DiceServData &data, const Postfix &postfix)
 				}
 				else if (token.equals_ci("acos"))
 				{
+					// Arc cosine is undefined outside the domain [-1, 1]
 					if (std::abs(val1) > 1)
 					{
 						data.errCode = DICE_ERROR_UNDEFINED;
@@ -1514,6 +1594,7 @@ static double EvaluatePostfix(DiceServData &data, const Postfix &postfix)
 				}
 				else if (token.equals_ci("acosh"))
 				{
+					// Inverse hyperbolic cosine is undefined for any value less than 1
 					if (val1 < 1)
 					{
 						data.errCode = DICE_ERROR_UNDEFINED;
@@ -1525,6 +1606,7 @@ static double EvaluatePostfix(DiceServData &data, const Postfix &postfix)
 				}
 				else if (token.equals_ci("asin"))
 				{
+					// Arc sine is undefined outside the domain [-1, 1]
 					if (std::abs(val1) > 1)
 					{
 						data.errCode = DICE_ERROR_UNDEFINED;
@@ -1558,6 +1640,7 @@ static double EvaluatePostfix(DiceServData &data, const Postfix &postfix)
 				}
 				else if (token.equals_ci("atanh"))
 				{
+					// Inverse hyperbolic tangent is undefined outside the domain (-1, 1)
 					if (std::abs(val1) >= 1)
 					{
 						data.errCode = std::abs(val1) == 1 ? DICE_ERROR_DIV0 : DICE_ERROR_UNDEFINED;
@@ -1605,9 +1688,16 @@ static double EvaluatePostfix(DiceServData &data, const Postfix &postfix)
 				}
 				else if (token.equals_ci("fac"))
 				{
+					// Negative factorials are considered undefined
 					if (static_cast<int>(val1) < 0)
 					{
 						data.errCode = DICE_ERROR_UNDEFINED;
+						return 0;
+					}
+					// Any factorials over 12 will be outside the range of a signed 32-bit integer, so don't bother to calculate them
+					if (val1 > 12)
+					{
+						data.errCode = DICE_ERROR_OVERUNDERFLOW;
 						return 0;
 					}
 					val = 1;
@@ -1624,6 +1714,7 @@ static double EvaluatePostfix(DiceServData &data, const Postfix &postfix)
 				}
 				else if (token.equals_ci("log"))
 				{
+					// Logarithm is invalid for values 0 or less
 					if (val1 <= 0)
 					{
 						data.errCode = DICE_ERROR_DIV0;
@@ -1635,6 +1726,7 @@ static double EvaluatePostfix(DiceServData &data, const Postfix &postfix)
 				}
 				else if (token.equals_ci("log10"))
 				{
+					// Logarithm is invalid for values 0 or less
 					if (val1 <= 0)
 					{
 						data.errCode = DICE_ERROR_DIV0;
@@ -1724,6 +1816,7 @@ static double EvaluatePostfix(DiceServData &data, const Postfix &postfix)
 				}
 				else if (token.equals_ci("sqrt"))
 				{
+					// Because imaginary numbers are not being used, it is impossible to take the square root of a negative number
 					if (val1 < 0)
 					{
 						data.errCode = DICE_ERROR_UNDEFINED;
@@ -1735,6 +1828,7 @@ static double EvaluatePostfix(DiceServData &data, const Postfix &postfix)
 				}
 				else if (token.equals_ci("tan"))
 				{
+					// Tangent is undefined for any value of pi / 2 + pi * n for all integers n
 					if (!std::fmod(val1 + 2 * std::atan(1.0), std::atan(1.0) * 4))
 					{
 						data.errCode = DICE_ERROR_UNDEFINED;
@@ -1788,6 +1882,7 @@ static double EvaluatePostfix(DiceServData &data, const Postfix &postfix)
 						val = val1 * val2;
 						break;
 					case '/':
+						// Prevent division by 0
 						if (!val2)
 						{
 							data.errCode = DICE_ERROR_DIV0;
@@ -1796,6 +1891,7 @@ static double EvaluatePostfix(DiceServData &data, const Postfix &postfix)
 						val = val1 / val2;
 						break;
 					case '%':
+						// Prevent division by 0
 						if (!val2)
 						{
 							data.errCode = DICE_ERROR_DIV0;
@@ -1804,16 +1900,19 @@ static double EvaluatePostfix(DiceServData &data, const Postfix &postfix)
 						val = std::fmod(val1, val2);
 						break;
 					case '^':
+						// Because imaginary numbers are not being used, it is impossible to take the power of a negative number to a non-integer exponent
 						if (val1 < 0 && static_cast<int>(val2) != val2)
 						{
 							data.errCode = DICE_ERROR_UNDEFINED;
 							return 0;
 						}
+						// Prevent division by 0
 						if (!val1 && !val2)
 						{
 							data.errCode = DICE_ERROR_DIV0;
 							return 0;
 						}
+						// 0 to a negative power is invalid
 						if (!val1 && val2 < 0)
 						{
 							data.errCode = DICE_ERROR_OVERUNDERFLOW;
@@ -1823,6 +1922,7 @@ static double EvaluatePostfix(DiceServData &data, const Postfix &postfix)
 						break;
 					case 'd':
 					{
+						// Make sure both the number of dice and the number of sides are within acceptable ranges
 						if (val1 < 1 || val1 > DICE_MAX_DICE)
 						{
 							data.errCode = DICE_ERROR_UNACCEPTABLE_DICE;
@@ -2053,6 +2153,13 @@ void DiceServData::Reset()
 	this->errNum = 0;
 }
 
+/** Joins a parameters list by a common delimiter into a single string.
+ * @param params The parameter list to join
+ * @param firstParam The index of the first parameter to start joining from
+ * @param lastParam The index of the last parameter to end joining at
+ * @param delimiter The delimiter between the parameters, defaults to a space
+ * @return A string of the parameters joined by the delimiter
+ */
 static Anope::string Join(const std::vector<Anope::string> &params, size_t firstParam, size_t lastParam, const Anope::string &delimiter = " ")
 {
 	Anope::string joinedString;
@@ -2837,7 +2944,7 @@ public:
 				v = DoEvaluate(data, dice_postfix);
 				// As long as we didn't have an error, we will continue
 				if (data.errCode == DICE_ERROR_NONE)
-					// Round the result and add it the buffer
+					// Round the result, if needed, and add it the buffer
 					data.results.push_back(data.roundResults ? static_cast<int>(my_round(v)) : v);
 				// Leave if there was an error
 				else
