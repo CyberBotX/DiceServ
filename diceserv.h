@@ -229,6 +229,7 @@ public:
 	DiceResult *Dice(int num, unsigned sides);
 	void HandleError(CommandSource &source);
 	void SendReply(CommandSource &source, const Anope::string &output) const;
+	bool HasExtended() const;
 };
 
 class DiceServDataHandlerService : public Service
@@ -255,6 +256,7 @@ public:
 	virtual DiceResult *Dice(DiceServData &data, int num, unsigned sides) = 0;
 	virtual void HandleError(DiceServData &data, CommandSource &source) = 0;
 	virtual void SendReply(const DiceServData &data, CommandSource &source, const Anope::string &output) const = 0;
+	virtual bool HasExtended(const DiceServData &data) const = 0;
 
 	// DiceResult handlers
 

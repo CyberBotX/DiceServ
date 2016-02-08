@@ -2368,6 +2368,16 @@ void DiceServData::SendReply(CommandSource &source, const Anope::string &output)
 		IRCD->SendNotice(Config->GetClient("DiceServ"), this->chanStr, "%s", output.c_str());
 }
 
+bool DiceServData::HasExtended() const
+{
+	if (!this->timesPart.empty() && this->timesResults.empty())
+		return false;
+	for (int i = 0, len = this->opResults.size(); i < len; ++i)
+		if (this->opResults[i].empty())
+			return false;
+	return true;
+}
+
 /** A middleman service to prevent the need for most of DiceServData's code being in the header (and thus only defined once here in the core).
  */
 class DiceServDataHandler : public DiceServDataHandlerService
@@ -2450,6 +2460,11 @@ public:
 	void SendReply(const DiceServData &data, CommandSource &source, const Anope::string &output) const
 	{
 		data.SendReply(source, output);
+	}
+
+	bool HasExtended(const DiceServData &data) const
+	{
+		return data.HasExtended();
 	}
 
 	const std::vector<unsigned> &Results(const DiceResult &result) const

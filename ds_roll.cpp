@@ -189,13 +189,11 @@ public:
 	void Execute(CommandSource &source, const std::vector<Anope::string> &params) anope_override
 	{
 		DiceServData data;
+		data.isExtended = true;
+		data.rollPrefix = "Exroll";
 
 		if (!DiceServDataHandler->PreParse(data, source, params, 1))
 			return;
-
-		data.isExtended = data.diceStr == "%" || data.diceStr.find_ci('d') != Anope::string::npos || data.diceStr.find_ci("rand(") != Anope::string::npos;
-		data.rollPrefix = data.isExtended ? "Exroll" : "Roll";
-
 		if (!DiceServDataHandler->CheckMessageLengthPreProcess(data, source))
 			return;
 
@@ -206,6 +204,8 @@ public:
 			DiceServDataHandler->HandleError(data, source);
 			return;
 		}
+		if (!DiceServDataHandler->HasExtended(data))
+			data.rollPrefix = "Roll";
 		Anope::string output = DiceServDataHandler->GenerateLongExOutput(data);
 		if (!DiceServDataHandler->CheckMessageLengthPostProcess(data, source, output))
 		{

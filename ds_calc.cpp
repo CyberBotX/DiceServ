@@ -94,13 +94,11 @@ public:
 	{
 		DiceServData data;
 		data.roundResults = false;
+		data.isExtended = true;
+		data.rollPrefix = "Excalc";
 
 		if (!DiceServDataHandler->PreParse(data, source, params, 1))
 			return;
-
-		data.isExtended = data.diceStr == "%" || data.diceStr.find_ci('d') != Anope::string::npos || data.diceStr.find_ci("rand(") != Anope::string::npos;
-		data.rollPrefix = data.isExtended ? "Excalc" : "Calc";
-
 		if (!DiceServDataHandler->CheckMessageLengthPreProcess(data, source))
 			return;
 
@@ -111,6 +109,8 @@ public:
 			DiceServDataHandler->HandleError(data, source);
 			return;
 		}
+		if (!DiceServDataHandler->HasExtended(data))
+			data.rollPrefix = "Calc";
 		Anope::string output = DiceServDataHandler->GenerateLongExOutput(data);
 		if (!DiceServDataHandler->CheckMessageLengthPostProcess(data, source, output))
 		{
