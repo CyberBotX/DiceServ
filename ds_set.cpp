@@ -77,8 +77,11 @@ public:
  */
 class DSSetIgnoreCommand : public Command
 {
+	/** When this value is true, then channel operators set in ChanServ can ignore channels in addition to the channel's founder(s) */
 	bool ChanOpCanIgnore;
 
+	/** Sets the actual syntax based on the access the user has.
+	 */
 	void SetRealSyntax(CommandSource &source)
 	{
 		this->ClearSyntax();
@@ -177,15 +180,15 @@ public:
 		// Otherwise, the thing to ignore is going to be assumed to be a nick
 		else
 		{
+			// Only Services Operators with diceserv/set can set ignores on nicks, deny access to those who aren't
+			if (!is_servoper)
+				source.Reply(ACCESS_DENIED);
 			// Find the User record and the NickAlias record from NickServ
 			User *nu = User::Find(where);
 			NickAlias *na = NickAlias::Find(where);
 			BotInfo *bot = BotInfo::Find(where);
-			// Only Services Operators with diceserv/set can set ignores on nicks, deny access to those who aren't
-			if (!is_servoper)
-				source.Reply(ACCESS_DENIED);
 			// If the nick wasn't found and a NickServ entry wasn't found (or the nick is suspended), display an error
-			else if (bot || (!nu && (!na || (na->nc && na->nc->HasExt("SUSPENDED")))))
+			if (bot || (!nu && (!na || (na->nc && na->nc->HasExt("SUSPENDED")))))
 				source.Reply(_("Nick %s is not a valid nick."), where.c_str());
 			// If we found a registered nick, we will store the ignore there
 			else if (na)
@@ -233,9 +236,12 @@ public:
 		}
 	}
 
-	void OnReload(Configuration::Conf *conf) anope_override
+	/** Sets the value for if channel operators can set ignores on channels.
+	 * @param chanOpCanIgnore true if channel operators can set ignores, false otherwise
+	 */
+	void SetChanOpCanIgnore(bool chanOpCanIgnore)
 	{
-		this->ChanOpCanIgnore = conf->GetModule("diceserv")->Get<bool>("chanopcanignore");
+		this->ChanOpCanIgnore = chanOpCanIgnore;
 	}
 
 	bool OnHelp(CommandSource &source, const Anope::string &) anope_override
@@ -283,6 +289,8 @@ public:
 		return true;
 	}
 
+	/** This is being overridden so we can replace the syntax string depending on the access the user has.
+	 */
 	void OnSyntaxError(CommandSource &source, const Anope::string &subcommand) anope_override
 	{
 		this->SetRealSyntax(source);
@@ -303,6 +311,11 @@ public:
 
 		if (!DiceServ)
 			throw ModuleException("No interface for DiceServ");
+	}
+
+	void OnReload(Configuration::Conf *conf) anope_override
+	{
+		this->set_ignore_cmd.SetChanOpCanIgnore(conf->GetModule("diceserv")->Get<bool>("chanopcanignore"));
 	}
 };
 
