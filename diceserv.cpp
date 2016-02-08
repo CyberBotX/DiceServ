@@ -122,6 +122,7 @@ SOFTWARE.
 /* RequiredLibraries: m */
 
 #include <algorithm>
+#include <functional>
 #include <cctype>
 #include <cmath>
 #include <cstdlib>
@@ -451,6 +452,16 @@ static SFMT_Mother sfmtRNG(static_cast<int>(std::time(NULL)));
 static inline bool is_number(char chr)
 {
 	return (chr >= '0' && chr <= '9') || chr == '.';
+}
+
+/** Determine if the given string is a number.
+ * @param str String to check
+ * @return true if the string is a number, false otherwise
+ */
+static inline bool is_number_str(const Anope::string &str)
+{
+	Anope::string::const_iterator begin = str.begin(), end = str.end();
+	return std::find_if(begin, end, std::not1(std::ptr_fun(is_number))) == end && std::count(begin, end, '.') < 2;
 }
 
 /** Determine if the given character is a multiplication or division operator.
@@ -1238,20 +1249,23 @@ static Postfix InfixToPostfix(DiceServData &data, const Infix &infix)
 	std::stack<unsigned> arity_stack;
 	spacesepstream tokens(infix.str);
 	Anope::string token, lastone;
+	// Loop over the space-separated tokens
 	while (tokens.GetToken(token))
 	{
+		// If the start of the token is _, then we are dealing with a negative number
 		if (token[0] == '_')
 		{
 			double number = 0.0;
-			if (is_constant(token, 1))
+			Anope::string token1 = token.substr(1);
+			if (is_constant(token1))
 			{
-				if (token.substr(1).equals_ci("e"))
+				if (token1.equals_ci("e"))
 					number = -exp(1.0);
-				else if (token.substr(1).equals_ci("pi"))
+				else if (token1.equals_ci("pi"))
 					number = -atan(1.0) * 4;
 			}
 			else
-				number = -atof(token.substr(1).c_str());
+				number = is_number_str(token1) ? -convertTo<double>(token1) : std::numeric_limits<double>::quiet_NaN();
 			if (is_infinite(number) || is_notanumber(number))
 			{
 				data.errCode = is_infinite(number) ? DICE_ERROR_OVERUNDERFLOW : DICE_ERROR_UNDEFINED;
@@ -1263,7 +1277,7 @@ static Postfix InfixToPostfix(DiceServData &data, const Infix &infix)
 		}
 		else if (is_number(token[0]))
 		{
-			double number = atof(token.c_str());
+			double number = is_number_str(token) ? convertTo<double>(token) : std::numeric_limits<double>::quiet_NaN();
 			if (is_infinite(number) || is_notanumber(number))
 			{
 				data.errCode = is_infinite(number) ? DICE_ERROR_OVERUNDERFLOW : DICE_ERROR_UNDEFINED;
@@ -1290,7 +1304,6 @@ static Postfix InfixToPostfix(DiceServData &data, const Infix &infix)
 		}
 		else if (is_operator(token[0]))
 		{
-			lastone = op_stack.empty() ? "" : op_stack.top();
 			if (!prev_was_number && token != "(" && token != ")" && !prev_was_close)
 			{
 				data.errPos = infix.positions[x];
@@ -1299,6 +1312,7 @@ static Postfix InfixToPostfix(DiceServData &data, const Infix &infix)
 				postfix.clear();
 				return postfix;
 			}
+			lastone = op_stack.empty() ? "" : op_stack.top();
 			prev_was_number = false;
 			if (token == "(")
 			{
@@ -1371,7 +1385,6 @@ static Postfix InfixToPostfix(DiceServData &data, const Infix &infix)
 			}
 			else
 			{
-				Anope::string paren = lastone;
 				op_stack.pop();
 				lastone = op_stack.empty() ? "" : op_stack.top();
 				if (!is_function(lastone))
@@ -1384,7 +1397,7 @@ static Postfix InfixToPostfix(DiceServData &data, const Infix &infix)
 				}
 				else
 				{
-					op_stack.push(paren);
+					op_stack.push("(");
 					++arity_stack.top();
 				}
 			}
@@ -1448,8 +1461,7 @@ static double EvaluatePostfix(DiceServData &data, const Postfix &postfix)
 	{
 		if (postfix[x]->Type() == POSTFIX_VALUE_STRING)
 		{
-			const PostfixValueString *str = dynamic_cast<const PostfixValueString *>(postfix[x]);
-			const Anope::string *token_ptr = str->Get();
+			const Anope::string *token_ptr = anope_dynamic_static_cast<const PostfixValueString *>(postfix[x])->Get();
 			Anope::string token = token_ptr ? *token_ptr : "";
 			if (token.empty())
 			{
@@ -1838,7 +1850,7 @@ static double EvaluatePostfix(DiceServData &data, const Postfix &postfix)
 		}
 		else
 		{
-			const PostfixValueDouble *dbl = dynamic_cast<const PostfixValueDouble *>(postfix[x]);
+			const PostfixValueDouble *dbl = anope_dynamic_static_cast<const PostfixValueDouble *>(postfix[x]);
 			const double *val_ptr = dbl->Get();
 			if (!val_ptr)
 			{
