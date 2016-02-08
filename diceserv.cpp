@@ -2500,7 +2500,8 @@ class DiceServUpgradeTimer : public Timer
 	Anope::string diceservdb;
 
 public:
-	DiceServUpgradeTimer(Module *creator, long timeout, bool dorepeat, const Anope::string &db) : Timer(creator, timeout, Anope::CurTime, dorepeat), diceservdb(db)
+	DiceServUpgradeTimer(Module *creator, long timeout, bool dorepeat, const Anope::string &db) : Timer(creator, timeout, Anope::CurTime, dorepeat),
+		diceservdb(db)
 	{
 	}
 
@@ -2871,7 +2872,7 @@ public:
 	}
 };
 
-void DiceServUpgradeTimer::Tick(time_t) anope_override
+void DiceServUpgradeTimer::Tick(time_t)
 {
 	if (Me->IsSynced())
 	{
