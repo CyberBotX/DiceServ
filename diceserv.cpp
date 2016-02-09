@@ -247,6 +247,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#ifdef _MSC_VER
+# pragma warning(push)
+# pragma warning(disable: 4324)
+#endif
 class SFMT_Mother
 {
 	static const int SFMT_N = 88; // Size of state vector
@@ -438,6 +442,9 @@ public:
 		return y;
 	}
 };
+#ifdef _MSC_VER
+# pragma warning(pop)
+#endif
 
 const uint32_t SFMT_Mother::SFMT_MASK[] = { 0xeffff7fb, 0xffffffef, 0xdfdfbfff, 0x7fffdbfd };
 const uint32_t SFMT_Mother::SFMT_PARITY[] = { 1, 0, 0xe8148000, 0xd0c7afa3 };
