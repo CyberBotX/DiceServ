@@ -50,7 +50,7 @@ class DSDnD3eCharCommand : public Command
 	 * @param val The value to get the modifier of
 	 * @return The modifier of the value
 	 */
-	static double DnDmod(double val)
+	static int DnDmod(double val)
 	{
 		return static_cast<int>((val - 10) / 2);
 	}
