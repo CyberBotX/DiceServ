@@ -5,7 +5,7 @@
 #include <numeric>
 #include "module.h"
 
-/** Specialization of Anope's stringify that handles doubles only.
+/** Specialization of Anope's stringify that handles doubles only. This gives us max precision on output of doubles.
  */
 template<> inline Anope::string stringify<double>(const double &x)
 {
@@ -31,7 +31,7 @@ enum DiceErrorCode
 	DICE_ERROR_STACK
 };
 
-/** Enumeration for OperatorResult to determine it's type */
+/** Enumeration for OperatorResult to determine its type */
 enum OperatorResultType
 {
 	OPERATOR_RESULT_TYPE_NONE,
@@ -46,10 +46,6 @@ protected:
 	OperatorResultType type;
 
 public:
-	OperatorResultBase() : type(OPERATOR_RESULT_TYPE_NONE)
-	{
-	}
-
 	OperatorResultBase(OperatorResultType t) : type(t)
 	{
 	}
@@ -74,9 +70,7 @@ class DiceResult : public OperatorResultBase
 	std::vector<unsigned> results;
 
 public:
-	DiceResult(int n = 0, unsigned s = 0) : OperatorResultBase(OPERATOR_RESULT_TYPE_DICE), num(n), sides(s), results()
-	{
-	}
+	DiceResult(int n = 0, unsigned s = 0);
 
 	void AddResult(unsigned result);
 	const std::vector<unsigned> &Results() const;

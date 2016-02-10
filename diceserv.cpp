@@ -2015,6 +2015,10 @@ const OperatorResultType &OperatorResultBase::Type() const
 	return this->type;
 }
 
+DiceResult::DiceResult(int n, unsigned s) : OperatorResultBase(OPERATOR_RESULT_TYPE_DICE), num(n), sides(s), results()
+{
+}
+
 void DiceResult::AddResult(unsigned result)
 {
 	this->results.push_back(result);
