@@ -2191,6 +2191,8 @@ bool DiceServData::PreParse(CommandSource &source, const std::vector<Anope::stri
 	// Set up the dice, chan, and comment strings
 	if (source.c)
 	{
+		if (params.size() < 2)
+			return false;
 		this->chanStr = params[0];
 		this->diceStr = params[1];
 		if (expectedChannelPos != 1)
