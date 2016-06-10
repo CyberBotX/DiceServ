@@ -1,8 +1,8 @@
 /* ----------------------------------------------------------------------------
  * Name    : diceserv.cpp
  * Author  : Naram Qashat (CyberBotX)
- * Version : 3.0.1
- * Date    : (Last modified) February 4, 2016
+ * Version : 3.0.2
+ * Date    : (Last modified) June 9, 2016
  * ----------------------------------------------------------------------------
  * The following applies to the non-Anope-derived portions of the code
  * (excluding the RNG):
@@ -49,6 +49,17 @@ SOFTWARE.
  * ----------------------------------------------------------------------------
  * Changelog:
  *
+ * 3.0.2 - Fixed an issue with SET IGNORE's reloading.
+ *       - Better handling on determining when to use extended output.
+ *       - Replaced usage of OnPostCommand for adding to NickServ/ChanServ
+ *         info, used OnNickInfo and OnChanInfo instead.
+ *       - Better checks for numbers in Infix to Postfix conversion.
+ *       - Prevent factorials of 13 of higher due to limit on 32-bit integers
+ *         as well as execution time.
+ *       - Prevent potential crashes if a fantasy command other than the D&D
+ *         3e Character one is used with no arguments.
+ *       - Minor C++11 fixes.
+ *       - Other minor code cleanups.
  * 3.0.1 - Fixed issues with loading an old DiceServ database so it actually
  *           works (there was a typo in the configuration file plus a timer
  *           has to be used).
