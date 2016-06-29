@@ -54,7 +54,7 @@ SOFTWARE.
  *       - Replaced usage of OnPostCommand for adding to NickServ/ChanServ
  *         info, used OnNickInfo and OnChanInfo instead.
  *       - Better checks for numbers in Infix to Postfix conversion.
- *       - Prevent factorials of 13 of higher due to limit on 32-bit integers
+ *       - Prevent factorials of 13 or higher due to limit on 32-bit integers
  *         as well as execution time.
  *       - Prevent potential crashes if a fantasy command other than the D&D
  *         3e Character one is used with no arguments.
@@ -2239,7 +2239,7 @@ bool DiceServData::PreParse(CommandSource &source, const std::vector<Anope::stri
 					source.Reply(CHAN_X_INVALID, this->chanStr.c_str());
 				return false;
 			}
-			if (this->DiceServ->IsIgnored(c) || (c->ci ? this->DiceServ->IsIgnored(c->ci) : false) || c->HasUserStatus(user, "MODERATED"))
+			if (this->DiceServ->IsIgnored(c) || (c->ci ? this->DiceServ->IsIgnored(c->ci) : false) || c->MatchesList(user, "QUIET") || c->HasMode("MODERATED"))
 				this->chanStr = "";
 			if (this->chanStr.empty() && source.c)
 				return false;
