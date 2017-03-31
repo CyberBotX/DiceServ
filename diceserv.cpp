@@ -2175,14 +2175,13 @@ void DiceServData::Reset()
 	this->errNum = 0;
 }
 
-/** Joins a parameters list by a common delimiter into a single string.
+/** Joins a parameters list by a space delimiter into a single string.
  * @param params The parameter list to join
  * @param firstParam The index of the first parameter to start joining from
  * @param lastParam The index of the last parameter to end joining at
- * @param delimiter The delimiter between the parameters, defaults to a space
- * @return A string of the parameters joined by the delimiter
+ * @return A string of the parameters joined by a space delimiter
  */
-static Anope::string Join(const std::vector<Anope::string> &params, size_t firstParam, size_t lastParam, const Anope::string &delimiter = " ")
+static Anope::string Join(const std::vector<Anope::string> &params, size_t firstParam, size_t lastParam)
 {
 	Anope::string joinedString;
 	for (size_t x = firstParam; x <= lastParam; ++x)
