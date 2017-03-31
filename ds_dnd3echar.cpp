@@ -22,7 +22,7 @@ class DSDnD3eCharCommand : public Command
 {
 	/** Find the lowest result out of the 4 6-sided dice thrown for a Dungeons and Dragons 3rd Edition character.
 	 * @param result The set of results to access
-	 * @param themin Reference to an integer storing the lowest result
+	 * @param min Reference to an integer storing the lowest result
 	 * @return The index of the lowest result
 	 */
 	static unsigned GetMinDnD(const DiceResult &result, unsigned &min)
@@ -116,8 +116,8 @@ public:
 			if (DnDmodadd(data) <= 0 || DnDmaxatt(data) <= 13)
 			{
 				source.Reply(DnDmodadd(data) <= 0 ? _("D&D 3e Character roll resulted in a character that had their\n"
-					"total modifiers be 0 or below, rerolling stats again.") : _("D&D 3e Character roll resulted in a character that had a max\n"
-					"score of 13 or less for all their abilities, rerolling stats\n"
+					"total modifiers be 0 or below, re-rolling stats again.") : _("D&D 3e Character roll resulted in a character that had a max\n"
+					"score of 13 or less for all their abilities, re-rolling stats\n"
 					"again."));
 				cont = true;
 				DiceServDataHandler->Reset(data);

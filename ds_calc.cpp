@@ -15,7 +15,7 @@ static ServiceReference<DiceServDataHandlerService> DiceServDataHandler("DiceSer
 
 /** CALC command
  *
- * Handles regular dice rolls, sans rounding, resulting in more of a calcualtion.
+ * Handles regular dice rolls, sans rounding, resulting in more of a calculation.
  */
 class DSCalcCommand : public Command
 {

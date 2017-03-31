@@ -146,7 +146,7 @@ public:
 				"The following math operators can be used in expressions:\n"
 				" \n"
 				"+ - * / ^ %% (in addition to 'd' for dice rolls and\n"
-				"parentheses to force order of operatons.)\n"
+				"parentheses to force order of operations.)\n"
 				" \n"
 				"Also note that if you use decimals in your expressions, the\n"
 				"result will be returned in integer form, unless you use CALC\n"

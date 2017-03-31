@@ -77,7 +77,7 @@ SOFTWARE.
  *       - Made sure that the math functions that were added for use with
  *           Visual Studio are only compiled in for Visual Studio 2012 or
  *           earlier, as they were finally included with Visual Studio 2013.
- *       - Completely restructued how results are handled.
+ *       - Completely restructured how results are handled.
  *       - Removed dtoa function as Anope's stringify could be used to replace
  *           it (at the cost of lower output precision on floating-point
  *           values).
@@ -205,7 +205,7 @@ static inline double atanh(double num)
 }
 
 /** Calculate cube root for Windows (only needed when compiling with Visual Studio 2012 or earlier).
- * @param num The double-percision floating point value to calculate
+ * @param num The double-precision floating point value to calculate
  * @return The cube root of the value
  */
 static inline double cbrt(double num)
@@ -526,7 +526,7 @@ static inline unsigned is_function(const Anope::string &str, unsigned pos = 0)
 {
 	// We only need a 5 character substring as that's the largest substring we will be looking at
 	Anope::string func = str.substr(pos, 5);
-	// acosh, asinh, atan2 atanh, floor, log10, round, trunc
+	// acosh, asinh, atan2, atanh, floor, log10, round, trunc
 	Anope::string func_5 = func.substr(0, 5);
 	if (func_5.equals_ci("acosh") || func_5.equals_ci("asinh") || func_5.equals_ci("atan2") || func_5.equals_ci("atanh") || func_5.equals_ci("floor") ||
 		func_5.equals_ci("log10") || func_5.equals_ci("round") || func_5.equals_ci("trunc"))
@@ -579,14 +579,14 @@ static inline unsigned is_constant(const Anope::string &str, unsigned pos = 0)
 	return 0;
 }
 
-/** Determine if the given operator has a higher precendence than the operator on the top of the stack during infix to postfix conversion.
+/** Determine if the given operator has a higher precedence than the operator on the top of the stack during infix to postfix conversion.
  * @param adding The operator we are adding to the stack, or an empty string if nothing is being added and we just want to remove
  * @param topstack The operator that was at the top of the operator stack
- * @return 0 if the given operator has the same or lower precendence (and won't cause a pop), 1 if the operator has higher precendence (and will cause a pop)
+ * @return 0 if the given operator has the same or lower precedence (and won't cause a pop), 1 if the operator has higher precedence (and will cause a pop)
  *
  * In addition to the above in regards to the return value, there are other situations. If the top of the stack is an open parenthesis,
  * or is empty, a 0 will be returned to stop the stack from popping anything else. If nothing is being added to the stack and the previous
- * sitation hasn't occurred, a 1 will be returned to signify to continue popping the stack until the previous sitation occurs. If the operator
+ * situation hasn't occurred, a 1 will be returned to signify to continue popping the stack until the previous situation occurs. If the operator
  * being added is a function, we return 0 to signify we aren't popping. If the top of the stack is a function, we return 1 to signify we are
  * popping. A -1 is only returned if an invalid operator is given, hopefully that will never happen.
  */
@@ -652,7 +652,7 @@ static double my_round(double val, unsigned decimals = 0)
 	if (decimalpart >= 0.5)
 		tempval = std::ceil(tempval); // next integer number if greater or equal to 0.5
 	else
-		tempval = std::floor(tempval); // otherwise stay in the current interger part
+		tempval = std::floor(tempval); // otherwise stay in the current integer part
 	return (tempval * std::pow(10.0, -static_cast<int>(decimals))) * sign; // shift again to the normal decimal places
 }
 
@@ -814,7 +814,7 @@ static Infix FixInfix(const Anope::string &infix)
  * The validation is as follows:
  * - All functions must have an open parenthesis after them.
  * - A comma must be prefixed by a number or close parenthesis and must be suffixed by a number, open parenthesis, _ for unary minus, constant, or function.
- * - All non-parentheis operators must be prefixed by a number or close parenthesis and suffixed by a number, open parenthesis, _ for unary minus, constant, or function.
+ * - All non-parenthesis operators must be prefixed by a number or close parenthesis and suffixed by a number, open parenthesis, _ for unary minus, constant, or function.
  * - All open parentheses must be prefixed by an operator, open parenthesis, or comma and suffixed by a number, an open parenthesis, _ for unary minus, constant, or function.
  * - All close parentheses must be prefixed by a number or close parenthesis and suffixed by an operator, close parenthesis, or comma.
  */
@@ -1030,7 +1030,7 @@ class PostfixValueBase
 	PostfixValueType type;
 
 protected:
-	/** When overriden, will be used to delete memory allocated.
+	/** When overridden, will be used to delete memory allocated.
 	 */
 	virtual void Clear() = 0;
 
@@ -1222,7 +1222,7 @@ public:
 		this->clear();
 	}
 
-	/** Assigment operator, will copy all values from one instance to this one, making sure to avoid memory leaks.
+	/** Assignment operator, will copy all values from one instance to this one, making sure to avoid memory leaks.
 	 * @param postfix The instance to copy values from
 	 * @return A reference of the current instance, for operator chaining purposes
 	 */
@@ -1545,7 +1545,7 @@ static Postfix InfixToPostfix(DiceServData &data, const Infix &infix)
 
 /** Evaluate a postfix notation equation.
  * @param The postfix notation equation to evaluate
- * @return The final result after calcuation of the equation
+ * @return The final result after calculation of the equation
  *
  * The evaluation pops the required values from the operand stack for a function, and 2 values from the operand stack for an operator. The result
  * of either one is placed back on the operand stack, hopefully leaving a single result at the end.
@@ -1992,7 +1992,7 @@ static double EvaluatePostfix(DiceServData &data, const Postfix &postfix)
 
 /** Parse an infix notation expression and convert the expression to postfix notation.
  * @param infix The original expression, in infix notation, to convert to postfix notation
- * @return A postfix notation expression equivilent to the infix notation expression given, or an empty object if the infix notation expression could not be parsed or converted
+ * @return A postfix notation expression equivalent to the infix notation expression given, or an empty object if the infix notation expression could not be parsed or converted
  */
 static Postfix DoParse(DiceServData &data, const Anope::string &infix)
 {
@@ -2729,7 +2729,7 @@ public:
 					"    floor(\037x\037)       The next largest integer less than or\n"
 					"                   equal to \037x\037\n"
 					"    log(\037x\037)         Natural logarithm of \037x\037\n"
-					"    log10(\037x\037)       Commmon logarithm of \037x\037\n"
+					"    log10(\037x\037)       Common logarithm of \037x\037\n"
 					"    max(...)       Maximum of all values given (they must\n"
 					"                   be separated by commas)\n"
 					"    min(...)       Minimum of all values given (they must\n"
@@ -2931,7 +2931,7 @@ public:
 			// If the parsing failed, leave
 			if (times_postfix.empty())
 				return;
-			// Evaulate the expression
+			// Evaluate the expression
 			data.StartNewOpResults();
 			v = DoEvaluate(data, times_postfix);
 			data.SetOpResultsAsTimesResults();
