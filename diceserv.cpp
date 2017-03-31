@@ -2253,6 +2253,7 @@ bool DiceServData::PreParse(CommandSource &source, const std::vector<Anope::stri
 		this->diceStr.erase(this->diceStr.end() - 1);
 		this->diceStr[sbracket] = '~';
 	}
+	// Extract the number of times expression, if any.
 	size_t tilde = this->diceStr.find('~');
 	if (tilde != Anope::string::npos)
 	{
