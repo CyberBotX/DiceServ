@@ -2513,12 +2513,10 @@ void DiceServData::SendReply(CommandSource &source, const Anope::string &output)
 
 bool DiceServData::HasExtended() const
 {
-	if (!this->timesPart.empty() && this->timesResults.empty())
-		return false;
 	for (int i = 0, len = this->opResults.size(); i < len; ++i)
 		if (this->opResults[i].empty())
 			return false;
-	return true;
+	return !this->timesPart.empty() && !this->timesResults.empty();
 }
 
 /** A middleman service to prevent the need for most of DiceServData's code being in the header (and thus only defined once here in the core).
