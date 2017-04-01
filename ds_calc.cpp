@@ -109,21 +109,33 @@ public:
 			DiceServDataHandler->HandleError(data, source);
 			return;
 		}
-		if (!DiceServDataHandler->HasExtended(data))
-			data.rollPrefix = "Calc";
-		Anope::string output = DiceServDataHandler->GenerateLongExOutput(data);
-		if (!DiceServDataHandler->CheckMessageLengthPostProcess(data, source, output))
+		Anope::string output;
+		if (DiceServDataHandler->HasExtended(data))
 		{
-			output = DiceServDataHandler->GenerateShortExOutput(data);
+			output = DiceServDataHandler->GenerateLongExOutput(data);
 			if (!DiceServDataHandler->CheckMessageLengthPostProcess(data, source, output))
 			{
-				data.rollPrefix = "Calc";
-				output = DiceServDataHandler->GenerateNoExOutput(data);
+				output = DiceServDataHandler->GenerateShortExOutput(data);
 				if (!DiceServDataHandler->CheckMessageLengthPostProcess(data, source, output))
 				{
-					DiceServDataHandler->HandleError(data, source);
-					return;
+					data.rollPrefix = "Calc";
+					output = DiceServDataHandler->GenerateNoExOutput(data);
+					if (!DiceServDataHandler->CheckMessageLengthPostProcess(data, source, output))
+					{
+						DiceServDataHandler->HandleError(data, source);
+						return;
+					}
 				}
+			}
+		}
+		else
+		{
+			data.rollPrefix = "Calc";
+			output = DiceServDataHandler->GenerateNoExOutput(data);
+			if (!DiceServDataHandler->CheckMessageLengthPostProcess(data, source, output))
+			{
+				DiceServDataHandler->HandleError(data, source);
+				return;
 			}
 		}
 		DiceServDataHandler->SendReply(data, source, output);
