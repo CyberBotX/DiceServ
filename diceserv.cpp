@@ -1,15 +1,15 @@
 /* ----------------------------------------------------------------------------
  * Name    : diceserv.cpp
  * Author  : Naram Qashat (CyberBotX)
- * Version : 3.0.2
- * Date    : (Last modified) June 9, 2016
+ * Version : 3.0.3
+ * Date    : (Last modified) March 31, 2017
  * ----------------------------------------------------------------------------
  * The following applies to the non-Anope-derived portions of the code
  * (excluding the RNG):
 
 The MIT License (MIT)
 
-Copyright (c) 2004-2016 Naram Qashat
+Copyright (c) 2004-2017 Naram Qashat
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -49,15 +49,22 @@ SOFTWARE.
  * ----------------------------------------------------------------------------
  * Changelog:
  *
+ * 3.0.3 - Fixed an issue with user access in a moderated channel.
+ *       - Removed unused delimiter argument from my Join() function.
+ *       - Fixed an issue with DiceServData's HasExtended() function so it
+ *           would properly detect if we have extended results or not.
+ *       - Changed logic on determining when to start attempting to get
+ *           extended output.
+ *       - Fixed some typos and comments.
  * 3.0.2 - Fixed an issue with SET IGNORE's reloading.
  *       - Better handling on determining when to use extended output.
  *       - Replaced usage of OnPostCommand for adding to NickServ/ChanServ
- *         info, used OnNickInfo and OnChanInfo instead.
+ *           info, used OnNickInfo and OnChanInfo instead.
  *       - Better checks for numbers in Infix to Postfix conversion.
  *       - Prevent factorials of 13 or higher due to limit on 32-bit integers
- *         as well as execution time.
+ *           as well as execution time.
  *       - Prevent potential crashes if a fantasy command other than the D&D
- *         3e Character one is used with no arguments.
+ *           3e Character one is used with no arguments.
  *       - Minor C++11 fixes.
  *       - Other minor code cleanups.
  * 3.0.1 - Fixed issues with loading an old DiceServ database so it actually
