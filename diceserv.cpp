@@ -1,8 +1,8 @@
 /* ----------------------------------------------------------------------------
  * Name    : diceserv.cpp
  * Author  : Naram Qashat (CyberBotX)
- * Version : 3.0.3
- * Date    : (Last modified) March 31, 2017
+ * Version : 3.0.4
+ * Date    : (Last modified) August 26, 2017
  * ----------------------------------------------------------------------------
  * The following applies to the non-Anope-derived portions of the code
  * (excluding the RNG):
@@ -49,6 +49,9 @@ SOFTWARE.
  * ----------------------------------------------------------------------------
  * Changelog:
  *
+ * 3.0.4 - Replaced Agner Fog's SFMT+MOA RNG with a dSFMT RNG by the authors
+ *           of the Mersenne Twister RNG, mainly due to concerns over the RNG
+ *           not producing unbiased results.
  * 3.0.3 - Fixed an issue with user access in a moderated channel.
  *       - Removed unused delimiter argument from my Join() function.
  *       - Fixed an issue with DiceServData's HasExtended() function so it
@@ -221,38 +224,35 @@ static inline double cbrt(double num)
 }
 #endif
 
-/** A combination RNG, consisting of a SIMD-oriented Fast Mersenne Twister (SFMT) RNG and Mother-of-all RNG.
+/** A double-precision SIMD-oriented Fast Mersenne Twister RNG.
  *
- * SFMT is an improvement of the Mersenne Twister with better randomness and higher speed.
- * Mother-of-all is an older multiply-with-carry generator.
- * This is a combination of the two, with improved randomness.
- *
- * This class was copied from Agner Fog's C++ class library of uniform
- * random number generators, obtained from http://www.agner.org/random/
+ * This class was copied from Mutsuo Saito and Makoto Matsumoto,
+ * obtained from http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/SFMT/
  * Modified by Naram Qashat to only include what was needed by DiceServ,
- * as well as containing everything within the class. Also modified so the
- * Mother-of-all generator was actually seeded properly through RandomInit().
+ * as well as containing everything within the class.
  *
  * The following license applies to this class:
- *
- * GNU General Public License http://www.gnu.org/licenses/gpl.html
- * This C++ implementation of SFMT contains parts of the original C code
- * which was published under the following BSD license, which is therefore
- * in effect in addition to the GNU General Public License.
-
-Copyright (c) 2006, 2007 by Mutsuo Saito, Makoto Matsumoto and Hiroshima University.
-Copyright (c) 2008 by Agner Fog.
+Copyright (c) 2007, 2008, 2009 Mutsuo Saito, Makoto Matsumoto
+and Hiroshima University.
+Copyright (c) 2011, 2002 Mutsuo Saito, Makoto Matsumoto, Hiroshima
+University and The University of Tokyo.
 All rights reserved.
+
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-    > Redistributions of source code must retain the above copyright notice,
-      this list of conditions and the following disclaimer.
-    > Redistributions in binary form must reproduce the above copyright notice,
-      this list of conditions and the following disclaimer in the documentation
-      and/or other materials provided with the distribution.
-    > Neither the name of the Hiroshima University nor the names of its
-      contributors may be used to endorse or promote products derived from
-      this software without specific prior written permission.
+modification, are permitted provided that the following conditions are
+met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following
+      disclaimer in the documentation and/or other materials provided
+      with the distribution.
+    * Neither the name of the Hiroshima University nor the names of
+      its contributors may be used to endorse or promote products
+      derived from this software without specific prior written
+      permission.
+
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -265,209 +265,190 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifdef _MSC_VER
-# pragma warning(push)
-# pragma warning(disable: 4324)
-#endif
-class SFMT_Mother
+class dSFMT216091
 {
-	static const int SFMT_N = 88; // Size of state vector
-	static const int SFMT_M = 68; // Position of intermediate feedback
-	static const int SFMT_SL1 = 14; // Left shift of W[N-1], 32-bit words
-	static const int SFMT_SL2 = 3; // Left shift of W[0], *8, 128-bit words
-	static const int SFMT_SR1 = 7; // Right shift of W[M], 32-bit words
-	static const int SFMT_SR2 = 3; // Right shift of W[N-2], *8, 128-bit words
-	static const uint32_t SFMT_MASK[]; // AND mask
-	static const uint32_t SFMT_PARITY[]; // Period certification vector
-
-	uint32_t ix; // Index into state array
-	uint32_t LastInterval; // Last interval length for IRandomX
-	uint32_t RLimit; // Rejection limit used by IRandomX
-	__m128i mask; // AND mask
-	union
+	union w128_t
 	{
-		__m128i state128[SFMT_N];
-		uint32_t state32[4 * SFMT_N];
-	}; // State vector for SFMT generator
-	uint32_t MotherState[5]; // State vector for Mother-Of-All generator
-
-	// Subfunction for the sfmt algorithm
-	static __m128i sfmt_recursion(const __m128i &a, const __m128i &b, const __m128i &c, const __m128i &d, const __m128i &mask)
+		__m128i si;
+		uint64_t u[2];
+		uint32_t u32[4];
+		double d[2];
+	};
+	union X128I_T
 	{
-		__m128i b1 = _mm_srli_epi32(b, SFMT_SR1);
-		__m128i a1 = _mm_slli_si128(a, SFMT_SL2);
-		__m128i c1 = _mm_srli_si128(c, SFMT_SR2);
-		__m128i d1 = _mm_slli_epi32(d, SFMT_SL1);
-		b1 = _mm_and_si128(b1, mask);
-		__m128i z1 = _mm_xor_si128(a, a1);
-		__m128i z2 = _mm_xor_si128(b1, d1);
-		z1 = _mm_xor_si128(z1, c1);
-		z2 = _mm_xor_si128(z1, z2);
-		return z2;
+		uint64_t u[2];
+		__m128i i128;
+	};
+
+	static const int DSFMT_POS1 = 1890; // The pick up position of the array
+	static const int DSFMT_SL1 = 23; // The parameter of shift left as four 32-bit registers
+	// A bitmask, used in the recursion. These parameters are introduced to break symmetry of SIMD
+	static const uint64_t DSFMT_MSK1 = 0x000bf7df7fefcfffULL;
+	static const uint64_t DSFMT_MSK2 = 0x000e7ffffef737ffULL;
+	// These definitions are part of a 128-bit period certification vector
+	static const uint64_t DSFMT_FIX1 = 0xd7f95a04764c27d7ULL;
+	static const uint64_t DSFMT_FIX2 = 0x6a483861810bebc2ULL;
+	static const uint64_t DSFMT_PCV1 = 0x3af0a8f3d5600000ULL;
+	static const uint64_t DSFMT_PCV2 = 0x0000000000000001ULL;
+
+	static const uint64_t DSFMT_LOW_MASK = 0x000FFFFFFFFFFFFFULL;
+	static const uint64_t DSFMT_HIGH_CONST = 0x3FF0000000000000ULL;
+	static const int DSFMT_SR = 12;
+
+	static const int SSE2_SHUFF = 0x1b;
+
+	static const int DSFMT_MEXP = 216091; // Mersenne Exponent. The period of the sequence is a multiple of 2^DSFMT_MEXP - 1.
+	static const int DSFMT_N = (DSFMT_MEXP - 128) / 104 + 1; // DSFMT generator has an internal state array of 128-bit integers, and N is its size
+	static const int DSFMT_N64 = DSFMT_N * 2; // N64 is the size of internal state array when regarded as an array of 64-bit integers
+
+	static const X128I_T sse2_param_mask;
+
+	w128_t status[DSFMT_N + 1]; // The 128-bit internal state array
+	int idx;
+
+	/** Represents the recursion formula.
+	 * @param r output 128-bit
+	 * @param a a 128-bit part of the internal state array
+	 * @param b a 128-bit part of the internal state array
+	 * @param u a 128-bit part of the internal state array (I/O)
+	 */
+	static void do_recursion(w128_t &r, const w128_t &a, const w128_t &b, w128_t &u)
+	{
+		__m128i x = a.si;
+		__m128i z = _mm_slli_epi64(x, DSFMT_SL1);
+		__m128i y = _mm_shuffle_epi32(u.si, SSE2_SHUFF);
+		z = _mm_xor_si128(z, b.si);
+		y = _mm_xor_si128(y, z);
+
+		__m128i v = _mm_srli_epi64(y, DSFMT_SR);
+		__m128i w = _mm_and_si128(y, sse2_param_mask.i128);
+		v = _mm_xor_si128(v, x);
+		v = _mm_xor_si128(v, w);
+		r.si = v;
+		u.si = y;
 	}
 
-	void Init2()
+	/** Fills the internal state array with double precision floating point pseudorandom numbers of the IEEE 754 format.
+	 */
+	void gen_rand_all()
 	{
-		// Initialize mask
-		this->mask = _mm_loadu_si128(reinterpret_cast<const __m128i *>(SFMT_MASK));
-
-		// Period certification
-		// Check if SFMT_PARITY & state[0] has odd parity
-		uint32_t i, temp = 0;
-		for (i = 0; i < 4; ++i)
-			temp ^= SFMT_PARITY[i] & this->state32[i];
-		for (i = 16; i > 0; i >>= 1)
-			temp ^= temp >> i;
-		if (!(temp & 1))
-			// parity is even. Certification failed
-			// Find a nonzero bit in period certification vector
-			for (i = 0; i < 4; ++i)
-				if (SFMT_PARITY[i])
-					for (uint32_t j = 1; j; j <<= 1)
-						if (SFMT_PARITY[i] & j)
-						{
-							// Flip the corresponding bit in state[0] to change parity
-							this->state32[i] ^= j;
-							// Done. Exit i and j loops
-							i = 5;
-							break;
-						}
-		// Generate first random numbers and set ix = 0
-		this->Generate();
-	}
-
-	void Generate()
-	{
-		// Fill state array with new random numbers
-		__m128i r, r1 = this->state128[SFMT_N - 2], r2 = this->state128[SFMT_N - 1];
+		w128_t lung = this->status[DSFMT_N];
+		do_recursion(this->status[0], this->status[0], this->status[DSFMT_POS1], lung);
 		int i;
-		for (i = 0; i < SFMT_N - SFMT_M; ++i)
-		{
-			r = sfmt_recursion(this->state128[i], this->state128[i + SFMT_M], r1, r2, this->mask);
-			this->state128[i] = r;
-			r1 = r2;
-			r2 = r;
-		}
-		for (; i < SFMT_N; ++i)
-		{
-			r = sfmt_recursion(this->state128[i], this->state128[i + SFMT_M - SFMT_N], r1, r2, this->mask);
-			this->state128[i] = r;
-			r1 = r2;
-			r2 = r;
-		}
-		this->ix = 0;
+		for (i = 1; i < DSFMT_N - DSFMT_POS1; ++i)
+			do_recursion(this->status[i], this->status[i], this->status[i + DSFMT_POS1], lung);
+		for (; i < DSFMT_N; ++i)
+			do_recursion(this->status[i], this->status[i], this->status[i + DSFMT_POS1 - DSFMT_N], lung);
+		this->status[DSFMT_N] = lung;
 	}
 
-	uint32_t MotherBits()
+	/** Initializes the internal state array with a 32-bit integer seed.
+	 * @param seed a 32-bit integer used as the seed.
+	 */
+	void init_gen_rand(uint32_t seed)
 	{
-		// Get random bits from Mother-Of-All generator
-		uint64_t sum = static_cast<uint64_t>(2111111111U) * static_cast<uint64_t>(this->MotherState[3]) +
-			static_cast<uint64_t>(1492) * static_cast<uint64_t>(this->MotherState[2]) +
-			static_cast<uint64_t>(1776) * static_cast<uint64_t>(this->MotherState[1]) +
-			static_cast<uint64_t>(5115) * static_cast<uint64_t>(this->MotherState[0]) +
-			static_cast<uint64_t>(this->MotherState[4]);
-		this->MotherState[3] = this->MotherState[2];
-		this->MotherState[2] = this->MotherState[1];
-		this->MotherState[1] = this->MotherState[0];
-		this->MotherState[4] = static_cast<uint32_t>(sum >> 32); // Carry
-		this->MotherState[0] = static_cast<uint32_t>(sum); // Low 32 bits of sum
-		return this->MotherState[0];
+		uint32_t *psfmt = &this->status[0].u32[0];
+		psfmt[0] = seed;
+		for (int i = 1; i < (DSFMT_N + 1) * 4; ++i)
+			psfmt[i] = 1812433253UL * (psfmt[i - 1] ^ (psfmt[i - 1] >> 30)) + i;
+		this->initial_mask();
+		this->period_certification();
+		this->idx = DSFMT_N64;
+	}
+
+	/** Initializes the internal state array to fit the IEEE 754 format.
+	 */
+	void initial_mask()
+	{
+		uint64_t *psfmt = &this->status[0].u[0];
+		for (int i = 0; i < DSFMT_N * 2; ++i)
+			psfmt[i] = (psfmt[i] & DSFMT_LOW_MASK) | DSFMT_HIGH_CONST;
+	}
+
+	/** Certificate the period of 2^DSFMT_MEXP - 1.
+	 */
+	void period_certification()
+	{
+		static const uint64_t pcv[] = { DSFMT_PCV1, DSFMT_PCV2 };
+		uint64_t tmp[] = { this->status[DSFMT_N].u[0] ^ DSFMT_FIX1, this->status[DSFMT_N].u[1] ^ DSFMT_FIX2 };
+
+		uint64_t inner = tmp[0] & pcv[0];
+		inner ^= tmp[1] & pcv[1];
+		int i;
+		for (i = 32; i > 0; i >>= 1)
+			inner ^= inner >> i;
+		inner &= 1;
+		// check OK
+		if (inner == 1)
+			return;
+		// check NG, and modification
+		if ((DSFMT_PCV2 & 1) == 1)
+			this->status[DSFMT_N].u[1] ^= 1;
+		else
+		{
+			for (i = 1; i >= 0; --i)
+			{
+				uint64_t work = 1;
+				for (int j = 0; j < 64; ++j)
+				{
+					if (work & pcv[i])
+					{
+						this->status[DSFMT_N].u[i] ^= work;
+						return;
+					}
+					work <<= 1;
+				}
+			}
+		}
+	}
+
+	/** Generates and returns double precision pseudorandom number which distributes uniformly in the range [1, 2).
+	 * @return double precision floating point pseudorandom number
+	 *
+	 * This is the primitive and faster than generating numbers in other ranges.
+	 */
+	double genrand_close1_open2()
+	{
+		double *psfmt64 = &this->status[0].d[0];
+
+		if (this->idx >= DSFMT_N64)
+		{
+			this->gen_rand_all();
+			this->idx = 0;
+		}
+		return psfmt64[this->idx++];
+	}
+
+	/** Generates and returns double precision pseudorandom number which distributes uniformly in the range [0, 1).
+	 * @return double precision floating point pseudorandom number
+	 */
+	double genrand_close_open()
+	{
+		return this->genrand_close1_open2() - 1.0;
 	}
 
 public:
-	SFMT_Mother(int seed) : LastInterval(0), RLimit(0)
+	dSFMT216091(uint32_t seed)
 	{
-		this->RandomInit(seed);
-	}
-
-	/** Re-initializes the random number generator with a new seed.
-	 * @param seed The value used to seed the generator.
-	 */
-	void RandomInit(int seed)
-	{
-		// Re-seed
-		uint32_t y = seed; // Temporary
-		static const uint32_t statesize = SFMT_N * 4 + 5; // Size of state vector
-
-		// Fill state vector with random numbers from seed
-		this->state32[0] = y;
-		static const uint32_t factor = 1812433253U; // Multiplication factor
-
-		uint32_t i;
-		for (i = 1; i < statesize; ++i)
-		{
-			y = factor * (y ^ (y >> 30)) + i;
-			if (i < statesize - 5)
-				this->state32[i] = y;
-			else
-				this->MotherState[i + 5 - statesize] = y;
-		}
-
-		// Further initialization and period certification
-		this->Init2();
+		this->init_gen_rand(seed);
 	}
 
 	/** Generate a random integer within the given range.
 	 * @param min The minimum value of the range
 	 * @param max The maximum value of the range
 	 * @return An integer in the interval min <= x <= max
+	 *
+	 * This function was not part of the original dSFMT implementation and was added by Naram Qashat.
 	 */
-	int IRandomX(int min, int max)
+	int Random(int min, int max)
 	{
-		// Output random integer in the interval min <= x <= max
-		// Each output value has exactly the same probability.
-		// This is obtained by rejecting certain bit values so that the number
-		// of possible bit values is divisible by the interval length
-		if (max <= min)
-		{
-			if (max == min)
-				return min; // max == min. Only one possible value
-			else
-				return 0x80000000; // max < min. Error output
-		}
-		// Assume 64 bit integers supported. Use multiply and shift method
-		uint32_t interval = static_cast<uint32_t>(max - min + 1); // Length of interval
-		if (interval != this->LastInterval)
-		{
-			// Interval length has changed. Must calculate rejection limit
-			// Reject when remainder = 2^32 / interval * interval
-			// RLimit will be 0 if interval is a power of 2. No rejection then.
-			this->RLimit = static_cast<uint32_t>((static_cast<uint64_t>(1) << 32) / interval) * interval - 1;
-			this->LastInterval = interval;
-		}
-		uint32_t remainder; // Longran % 2^32
-		uint32_t iran; // Longran / 2^32
-		do // Rejection loop
-		{
-			uint64_t longran = static_cast<uint64_t>(this->BRandom()) * interval; // Random bits * interval
-			iran = static_cast<uint32_t>(longran >> 32);
-			remainder = static_cast<uint32_t>(longran);
-		} while (remainder > this->RLimit);
-		// Convert back to signed and return result
-		return static_cast<int32_t>(iran) + min;
-	}
-
-	/** Generate 32 random bits.
-	 * @return The random bits generated.
-	 */
-	uint32_t BRandom()
-	{
-		// Output 32 random bits
-		if (this->ix >= SFMT_N * 4)
-			this->Generate();
-		uint32_t y = this->state32[this->ix++];
-		y += this->MotherBits();
-		return y;
+		return static_cast<int>(std::floor(this->genrand_close_open() * (max - min + 1)) + min);
 	}
 };
-#ifdef _MSC_VER
-# pragma warning(pop)
-#endif
 
-const uint32_t SFMT_Mother::SFMT_MASK[] = { 0xeffff7fb, 0xffffffef, 0xdfdfbfff, 0x7fffdbfd };
-const uint32_t SFMT_Mother::SFMT_PARITY[] = { 1, 0, 0xe8148000, 0xd0c7afa3 };
+const dSFMT216091::X128I_T dSFMT216091::sse2_param_mask = { { DSFMT_MSK1, DSFMT_MSK2 } };
 
-static SFMT_Mother sfmtRNG(static_cast<int>(std::time(NULL)));
+static dSFMT216091 sfmtRNG(static_cast<uint32_t>(std::time(NULL)));
 
 /** Determine if the given character is a number.
  * @param chr Character to check
@@ -636,7 +617,7 @@ DiceResult Dice(int num, unsigned sides)
 	DiceResult result = DiceResult(num, sides);
 	for (int i = 0; i < num; ++i)
 		// Get a random number between 1 and the number of sides
-		result.AddResult(sfmtRNG.IRandomX(1, sides));
+		result.AddResult(sfmtRNG.Random(1, sides));
 	return result;
 }
 
@@ -1816,7 +1797,7 @@ static double EvaluatePostfix(DiceServData &data, const Postfix &postfix)
 						val2 = val1;
 						val1 = tmp;
 					}
-					val = sfmtRNG.IRandomX(static_cast<int>(val1), static_cast<int>(val2));
+					val = sfmtRNG.Random(static_cast<int>(val1), static_cast<int>(val2));
 					result.SetNameAndResult("rand", val);
 					result.AddArgument(static_cast<int>(val1));
 					result.AddArgument(static_cast<int>(val2));

@@ -172,7 +172,7 @@ public:
 
 	static const Anope::string &Version()
 	{
-		static Anope::string version = "3.0.3";
+		static Anope::string version = "3.0.4";
 		return version;
 	}
 
