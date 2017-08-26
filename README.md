@@ -28,7 +28,7 @@ The parser supports not only dice rolls, but also much more complex math. It has
 
 DiceServ was originally created for Epona 1.4.14 in 2004. Version 2 of DiceServ was created as a module for Anope 1.8/1.9 in 2011, with all functionality in a single file. Version 3 of DiceServ was created as a set of modules for Anope 2.0 in 2016, heavily modularizing the service into multiple modules.
 
-DiceServ includes its own random number generator (RNG), which is a combination RNG of a SIMD-oriented Fast Mersenne Twister RNG and a Mother-of-all RNG, with the code coming from [Agner Fog](http://www.agner.org/random/). It parses by taking the given infix-notation expression and converting it into postfix-notation using the [Shunting-yard algorithm](https://en.wikipedia.org/wiki/Shunting-yard_algorithm), with an improvement to handle arbitrary numbers of arguments on functions coming from [Robin Sheat's blog](https://blog.kallisti.net.nz/2008/02/extension-to-the-shunting-yard-algorithm-to-allow-variable-numbers-of-arguments-to-functions/).
+DiceServ includes its own random number generator (RNG), which is a double-precision SIMD-oriented Fast Mersenne Twister RNG, with the code coming from [Mutsuo Saito and Makoto Matsumoto](http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/SFMT/). It parses by taking the given infix-notation expression and converting it into postfix-notation using the [Shunting-yard algorithm](https://en.wikipedia.org/wiki/Shunting-yard_algorithm), with an improvement to handle arbitrary numbers of arguments on functions coming from [Robin Sheat's blog](https://blog.kallisti.net.nz/2008/02/extension-to-the-shunting-yard-algorithm-to-allow-variable-numbers-of-arguments-to-functions/).
 
 ## Compiling and Installing
 
