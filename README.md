@@ -52,12 +52,12 @@ If you have any questions, comments or concerns about DiceServ:
 
 ## License
 
-With the exception of the Anope-specific parts of DiceServ (which are under GPLv1) and the RNG (which is under GPLv3), the remaining parts of DiceServ are license as follows:
+With the exception of the Anope-specific parts of DiceServ (which are under the GPLv1 license) and the RNG (which is under the BSD 3-clause license), the remaining parts of DiceServ are licensed as follows:
 
 ```
 The MIT License (MIT)
 
-Copyright (c) 2004-2016 Naram Qashat
+Copyright (c) 2004-2017 Naram Qashat
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
